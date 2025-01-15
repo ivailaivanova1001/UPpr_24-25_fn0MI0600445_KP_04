@@ -3,6 +3,54 @@
 
 #include <iostream>
 
+int gcd(int a, int b)
+{
+    while (b != 0)
+    {
+        int temp = b;
+        b = a % b;
+        a = temp;
+    }
+
+    if (a < 0)
+    {
+        return -a;
+    }
+    else
+    {
+        return a;
+    }
+}
+static int string_to_int(const std::string& str) 
+{
+    int result = 0;
+    bool isNegative = false;
+    size_t start = 0;
+
+    if (str[0] == '-') 
+    {
+        isNegative = true;
+        start = 1;
+    }
+
+    for (size_t i = start; i < str.size(); i++) 
+    {
+        if (str[i] < '0' || str[i] > '9') 
+        {
+            std::cerr << "Error.\n";
+            exit(1);
+        }
+        result = result * 10 + (str[i] - '0');
+    }
+
+    if (isNegative) 
+    {
+        return -result;
+    }
+    else {
+        return result;
+    }
+}
 
 int main() {
 
