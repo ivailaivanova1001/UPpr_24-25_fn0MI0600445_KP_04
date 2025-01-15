@@ -2,6 +2,10 @@
 //
 
 #include <iostream>
+#include <vector>
+
+typedef std::pair<int, int> Rational;
+typedef std::vector<Rational> Polynomial;
 
 int gcd(int a, int b)
 {
@@ -11,7 +15,6 @@ int gcd(int a, int b)
         b = a % b;
         a = temp;
     }
-
     if (a < 0)
     {
         return -a;
@@ -21,44 +24,234 @@ int gcd(int a, int b)
         return a;
     }
 }
-static int string_to_int(const std::string& str) 
+
+static Rational simplify(const Rational& r)
+{
+    int numerator = r.first;
+    int denumerator = r.second;
+
+    if (denumerator == 0)
+    {
+        std::cerr << "Denominator cannot be zero.\n";
+        exit(1);
+    }
+
+    int gcdValue = gcd(numerator, denumerator);
+    numerator /= gcdValue;
+    denumerator /= gcdValue;
+
+    if (denumerator < 0)
+    {
+        numerator = -numerator;
+        denumerator = -denumerator;
+    }
+
+    return { numerator, denumerator };
+}
+
+static int string_to_int(const std::string& str)
 {
     int result = 0;
     bool isNegative = false;
     size_t start = 0;
 
-    if (str[0] == '-') 
-    {
+    if (str[0] == '-') {
         isNegative = true;
         start = 1;
     }
 
-    for (size_t i = start; i < str.size(); i++) 
+    for (size_t i = start; i < str.size(); i++)
     {
-        if (str[i] < '0' || str[i] > '9') 
-        {
+        if (str[i] < '0' || str[i] > '9') {
             std::cerr << "Error.\n";
             exit(1);
         }
         result = result * 10 + (str[i] - '0');
     }
 
-    if (isNegative) 
-    {
+    if (isNegative) {
         return -result;
     }
     else {
         return result;
     }
 }
+static Rational add_rational(const Rational& a, const Rational& b)
+{
+    int n1 = a.first, d1 = a.second;
+    int n2 = b.first, d2 = b.second;
+    int numerator = n1 * d2 + n2 * d1;
+    int denominator = d1 * d2;
+    return simplify({ numerator, denominator });
+}
+
+static Rational subtract_rational(const Rational& a, const Rational& b)
+{
+    int n1 = a.first, d1 = a.second;
+    int n2 = b.first, d2 = b.second;
+    int numerator = n1 * d2 - n2 * d1;
+    int denominator = d1 * d2;
+    return simplify({ numerator, denominator });
+}
+
+
+static Polynomial add_polynomials(const Polynomial& p1, const Polynomial& p2)
+{
+    size_t max_degree = std::max(p1.size(), p2.size());
+    Polynomial result(max_degree, { 0, 1 });
+
+    for (size_t i = 0; i < max_degree; i++)
+    {
+        if (i < p1.size()) result[i] = add_rational(result[i], p1[i]);
+        if (i < p2.size()) result[i] = add_rational(result[i], p2[i]);
+    }
+
+    return result;
+}
+
+
+static Polynomial subtract_polynomials(const Polynomial& p1, const Polynomial& p2)
+{
+    size_t max_degree = std::max(p1.size(), p2.size());
+    Polynomial result(max_degree, { 0, 1 });
+
+    for (size_t i = 0; i < max_degree; i++)
+    {
+        if (i < p1.size()) result[i] = add_rational(result[i], p1[i]);
+        if (i < p2.size()) result[i] = subtract_rational(result[i], p2[i]);
+    }
+
+    return result;
+}
+
+static Polynomial multiply_polynomials(const Polynomial& p1, const Polynomial& p2)
+{
+    size_t degree1 = p1.size();
+    size_t degree2 = p2.size();
+    Polynomial result(degree1 + degree2 - 1, { 0, 1 });
+
+    for (size_t i = 0; i < degree1; i++)
+    {
+        for (size_t j = 0; j < degree2; j++)
+        {
+            Rational product = { p1[i].first * p2[j].first, p1[i].second * p2[j].second };
+            result[i + j] = add_rational(result[i + j], simplify(product));
+        }
+    }
+
+    return result;
+}
+
+std::pair<Polynomial, Polynomial> divide_polynomials(const Polynomial& dividend, const Polynomial& divisor)
+{
+    if (divisor.empty() || divisor.back().first == 0)
+    {
+        std::cerr << "Division by zero - not allowed.";
+        exit(1);
+    }
+
+    Polynomial quotient;
+    Polynomial remainder = dividend;
+    size_t divisor_degree = divisor.size() - 1;
+
+    while (!remainder.empty() && remainder.size() > divisor_degree)
+    {
+        size_t degree_difference = remainder.size() - divisor_degree - 1;
+        Rational leading_term = { remainder.back().first * divisor.back().second,
+                                remainder.back().second * divisor.back().first };
+        leading_term = simplify(leading_term);
+
+        Polynomial term(degree_difference + 1, { 0, 1 });
+        term.back() = leading_term;
+        quotient = add_polynomials(quotient, term);
+
+        Polynomial scaled_divisor = multiply_polynomials(term, divisor);
+        remainder = subtract_polynomials(remainder, scaled_divisor);
+
+        while (!remainder.empty() && remainder.back().first == 0)
+        {
+            remainder.pop_back();
+        }
+    }
+
+    return { quotient, remainder };
+}
+
+static void print_polynomial(const Polynomial& p)
+{
+    bool first = true;
+    for (size_t i = p.size(); i-- > 0;)
+    {
+        if (p[i].first != 0)
+        {
+            if (!first)
+                std::cout << " + ";
+            if (i == 0)
+            {
+                std::cout << p[i].first;
+            }
+            else if (p[i].second == 1)
+            {
+                std::cout << p[i].first << "x^" << i;
+            }
+            else
+            {
+                std::cout << "(" << p[i].first << "/" << p[i].second << ")x^" << i;
+            }
+            first = false;
+        }
+    }
+    if (first)
+        std::cout << "0";
+    std::cout << std::endl;
+}
+
+
+static Polynomial read_polynomial()
+{
+    int degree;
+    std::cout << "\nEnter the degree of the polynomial: ";
+    std::cin >> degree;
+
+    Polynomial p(degree + 1, { 0, 1 });
+
+    for (int i = degree; i >= 0; i--)
+    {
+        std::string rational;
+        int numerator = 0;
+        int denumerator = 1;
+        std::cout << "Enter coefficient before x^" << i << " : ";
+        std::cin >> rational;
+
+        size_t slashPos = rational.find('/');
+        if (slashPos != std::string::npos)
+        {
+            numerator = string_to_int(rational.substr(0, slashPos));
+            denumerator = string_to_int(rational.substr(slashPos + 1));
+        }
+        else
+        {
+            numerator = string_to_int(rational);
+            denumerator = 1;
+        }
+
+        p[i] = simplify({ numerator, denumerator });
+    }
+
+    std::cout << "Polynomial entered: ";
+    print_polynomial(p);
+
+    return p;
+}
 
 int main() {
 
-    std::cout << "\nWelcome!\n";
+    std::cout << "Welcome!\n";
     std::cout << "..........................................................\n";
     std::cout << "................Polynomial calculator.....................\n";
     std::cout << "..........................................................\n";
     std::cout << "\nChoose one of the following functionalities:\n";
+    std::cout << "..........................................................\n";
     std::cout << "1) Add polynomials\n";
     std::cout << "2) Subtract polynomials\n";
     std::cout << "3) Multiply polynomials\n";
@@ -75,185 +268,303 @@ int main() {
 
     int option;
 
-    do 
-    {
+    do {
         std::cin >> option;
 
-        switch (option) 
+        switch (option)
         {
-        case 1: 
+        case 1:
         {
             std::cout << "Polynomial P(x)\n";
-            //continue with function that read the first polynomial
+            Polynomial p1 = read_polynomial();
 
             std::cout << "\nPolynomial G(x)\n";
-            //continue with function that read the second polynomial
+            Polynomial p2 = read_polynomial();
 
-            //continue with function P(x) + G(x)
-
+            Polynomial sum = add_polynomials(p1, p2);
             std::cout << "P(x) + G(x)= ";
-
-            //contine by printing the sum
+            print_polynomial(sum);
 
             std::cout << "\nEnter a new option: ";
+
             break;
         }
-        case 2: 
+        case 2:
         {
             std::cout << "Polynomial P(x)\n";
-            //continue with function that read the first polynomial
+            Polynomial p1 = read_polynomial();
 
             std::cout << "\nPolynomial G(x)\n";
-            //continue with function that read the second polynomial
+            Polynomial p2 = read_polynomial();
 
-            //continue with function P(x) - G(x)
-
+            Polynomial difference = subtract_polynomials(p1, p2);
             std::cout << "P(x) - G(x)= ";
-
-            //contine by printing the diff
+            print_polynomial(difference);
 
             std::cout << "\nEnter a new option: ";
+
             break;
         }
-        case 3: 
+        case 3:
         {
-            std::cout << "Polynomial P(x)\n";
-            //continue with function that read the first polynomial
+            std::cout << "Polynomial P(x)";
+            Polynomial p1 = read_polynomial();
 
-            std::cout << "\nPolynomial G(x)\n";
-            //continue with function that read the second polynomial
+            std::cout << "\nPolynomial G(x)";
+            Polynomial p2 = read_polynomial();
 
-            //continue with function P(x) *  G(x)
-
+            Polynomial product = multiply_polynomials(p1, p2);
             std::cout << "P(x) * G(x)= ";
-
-            //continue by printing the *
+            print_polynomial(product);
 
             std::cout << "\nEnter a new option: ";
+
             break;
         }
-        case 4: 
+        case 4:
         {
-            std::cout << "Polynomial P(x)\n";
-            //continue with function that read the first polynomial
+            std::cout << "Polynomial P(x)";
+            Polynomial p1 = read_polynomial();
 
-            std::cout << "\nPolynomial G(x)\n";
-            //continue with function that read the second polynomial
+            std::cout << "\nPolynomial G(x)";
+            Polynomial p2 = read_polynomial();
 
-            // function for quotient and remainder
+            std::pair<Polynomial, Polynomial> divisionResult = divide_polynomials(p1, p2);
+            Polynomial quotient = divisionResult.first;
+            Polynomial remainder = divisionResult.second;
+
             std::cout << "Quotient: ";
+            print_polynomial(quotient);
 
-            // printing the quotient;
             std::cout << "Remainder: ";
-            // printing the remainder;
+            print_polynomial(remainder);
 
             std::cout << "\nEnter a new option: ";
+
             break;
         }
         case 5:
         {
-            std::cout << "Polynomial P(x)\n";
-            //continue with function that read the first polynomial
+            std::cout << "Polynomial P(x)";
+            Polynomial p = read_polynomial();
 
-            std::cout << "Enter scalar value: ";
+            std::cout << "\nEnter scalar value: ";
             int scalar;
             std::cin >> scalar;
 
-            //цикъл, с който скалара се умножава с всеки коефициент
+            for (size_t i = 0; i < p.size(); i++)
+            {
+                p[i].first *= scalar;
+                p[i] = simplify(p[i]);
+            }
 
             std::cout << "P(x) * " << scalar << " = ";
-            
-            // printing the new polynomial
+            print_polynomial(p);
 
             std::cout << "\nEnter a new option: ";
+
             break;
         }
-        case 6: 
+        case 6:
         {
-            std::cout << "Polynomial P(x)\n";
-            //continue with function that read the first polynomial
+            std::cout << "Polynomial P(x)";
+            Polynomial p = read_polynomial();
 
             std::cout << "Enter the value of x: ";
             int x;
             std::cin >> x;
 
-            //цикъл
+            Rational result = { 0, 1 };
+            Rational power = { 1, 1 };
 
-            std::cout << "P(" << x << ") = ";  // <<function;
-           
+            for (size_t i = 0; i < p.size(); i++)
+            {
+                result = add_rational(result, { p[i].first * power.first, p[i].second * power.second });
+                power.first *= x;
+            }
+
+            result = simplify(result);
+            std::cout << "P(" << x << ") = " << result.first;
+            if (result.second != 1)
+            {
+                std::cout << "/" << result.second;
+            }
             std::cout << "\nEnter a new option: ";
+
             break;
         }
-        case 7: 
+        case 7:
         {
-            std::cout << "Polynomial P(x)\n";
-            //continue with function that read the first polynomial
+            std::cout << "Polynomial P(x)";
+            Polynomial p1 = read_polynomial();
 
-            std::cout << "\nPolynomial G(x)\n";
-            //continue with function that read the first polynomial
+            std::cout << "Polynomial G(x)";
+            Polynomial p2 = read_polynomial();
 
-           //while for gcd
+            while (!p2.empty() && p2.back().first != 0)
+            {
+                Polynomial remainder = subtract_polynomials(p1, multiply_polynomials(p2, divide_polynomials(p1, p2).first));
+                p1 = p2;
+                p2 = remainder;
+            }
 
             std::cout << "GCD(P(x), G(x)) = ";
-            //continue with function that read the gcd polynomial
+            print_polynomial(p1);
+
             std::cout << "\nEnter a new option: ";
+
             break;
         }
-        case 8: 
+        case 8:
         {
-            std::cout << "Polynomial P(x)\n";
-            //continue with function that read the first polynomial
+            std::cout << "Polynomial P(x)";
+            Polynomial p = read_polynomial();
 
-             {
-                //proverka za viet
+            size_t degree = p.size() - 1;
+            if (degree == 0 || p.back().first == 0)
+            {
                 std::cout << "Invalid polynomial for Vieta's formulas";
                 break;
             }
 
+            Rational leading_coefficient = p.back();
             std::cout << "Vieta's formulas coefficients:";
 
-            // print coefficient before every x^
+            for (size_t i = 0; i < degree; i++)
+            {
+                Rational term = simplify({ p[i].first, leading_coefficient.first });
+                std::cout << "Coefficient of x^" << i << " = " << term.first;
+                if (term.second != 1) {
+                    std::cout << "/" << term.second;
+                }
+                std::cout << " ";
+            }
             std::cout << "\nEnter a new option: ";
+
             break;
         }
-        case 9: 
+        case 9:
         {
-            std::cout << "Polynomial P(x)\n";
-            //continue with function that read the first polynomial
+            std::cout << "Polynomial P(x)";
+            Polynomial p = read_polynomial();
 
             std::cout << "Enter the value of a: ";
             int a;
             std::cin >> a;
 
+            Polynomial shifted(p.size(), { 0, 1 });
+
+            for (size_t i = 0; i < p.size(); i++)
+            {
+                Rational coeff = p[i];
+                for (size_t j = 0; j <= i; j++)
+                {
+                    shifted[j].first += coeff.first;
+                    shifted[j].second = coeff.second;
+                }
+            }
+
             std::cout << "P(x + " << a << ") = ";
-            //print
+            print_polynomial(shifted);
 
             std::cout << "\nEnter a new option: ";
+
             break;
         }
         case 10:
         {
             std::cout << "Polynomial P(x)\n";
-            //continue with function that read the first polynomial
-            
+            Polynomial p = read_polynomial();
+
+
+            if (p.empty() || p.back().first == 0)
             {
-                //proverka
                 std::cout << "Invalid polynomial for factorization.\n";
                 break;
             }
-            //....
+
+            int constant_term = p[0].first;
+            int leading_coeff = p.back().first;
+
+            if (p.size() == 1)
+            {
+                std::cout << "This is a constant polynomial.\n";
+                std::cout << "Rational roots: ";
+                if (constant_term == 0)
+                {
+                    std::cout << "All numbers\n";
+                }
+                else
+                {
+                    std::cout << "None\n";
+                }
+
+                break;
+            }
+
+            std::vector<int> possible_numerators;
+            std::vector<int> possible_denominators;
+
+            for (int i = 1; i <= abs(constant_term); i++)
+            {
+                if (constant_term % i == 0)
+                {
+                    possible_numerators.push_back(i);
+                    possible_numerators.push_back(-i);
+                }
+            }
+
+            for (int i = 1; i <= abs(leading_coeff); i++)
+            {
+                if (leading_coeff % i == 0)
+                {
+                    possible_denominators.push_back(i);
+                }
+            }
+
+            std::cout << "Possible rational roots:\n";
+            for (int numerator : possible_numerators)
+            {
+                for (int denumerator : possible_denominators)
+                {
+                    Rational root = simplify({ numerator, denumerator });
+                    Rational value = { 0, 1 };
+                    Rational power = { 1, 1 };
+
+                    for (size_t i = 0; i < p.size(); i++)
+                    {
+                        value = add_rational(value, { p[i].first * power.first, p[i].second * power.second });
+                        power.first *= root.first;
+                        power.second *= root.second;
+                        power = simplify(power);
+                    }
+
+                    if (value.first == 0)
+                    {
+                        std::cout << root.first;
+                        if (root.second != 1)
+                        {
+                            std::cout << "/" << root.second;
+                        }
+                        std::cout << "\n";
+                    }
+                }
+            }
 
             std::cout << "\nEnter a new option: ";
+
             break;
 
         }
         case 11:
             std::cout << "\nGoodbye!\n";
+
             break;
         default:
-            std::cout << "\nPlease try again.\n";
+            std::cout << "Invalid option. Please try again.\n";
         }
     } while (option != 11);
+
     return 0;
 }
 
