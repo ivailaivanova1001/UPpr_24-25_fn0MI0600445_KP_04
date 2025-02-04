@@ -95,9 +95,19 @@ Rational subtract_rational(const Rational& a, const Rational& b)
     return simplify({ numerator, denominator });
 }
 
+size_t max_val(size_t a, size_t b) 
+{
+        size_t x = a;
+        if (b > a) 
+        {
+            x = b;
+        }
+        return x;
+}
+
 Polynomial add_polynomials(const Polynomial& p1, const Polynomial& p2)
 {
-    size_t max_degree = std::max(p1.size(), p2.size());
+    size_t max_degree = max_val(p1.size(), p2.size());
     Polynomial result(max_degree, { 0, 1 });
 
     for (size_t i = 0; i < max_degree; i++)
@@ -105,13 +115,12 @@ Polynomial add_polynomials(const Polynomial& p1, const Polynomial& p2)
         if (i < p1.size()) result[i] = add_rational(result[i], p1[i]);
         if (i < p2.size()) result[i] = add_rational(result[i], p2[i]);
     }
-
     return result;
 }
 
 Polynomial subtract_polynomials(const Polynomial& p1, const Polynomial& p2)
 {
-    size_t max_degree = std::max(p1.size(), p2.size());
+    size_t max_degree = max_val(p1.size(), p2.size());
     Polynomial result(max_degree, { 0, 1 });
 
     for (size_t i = 0; i < max_degree; i++)
@@ -119,7 +128,6 @@ Polynomial subtract_polynomials(const Polynomial& p1, const Polynomial& p2)
         if (i < p1.size()) result[i] = add_rational(result[i], p1[i]);
         if (i < p2.size()) result[i] = subtract_rational(result[i], p2[i]);
     }
-
     return result;
 }
 
@@ -137,7 +145,6 @@ Polynomial multiply_polynomials(const Polynomial& p1, const Polynomial& p2)
             result[i + j] = add_rational(result[i + j], simplify(product));
         }
     }
-
     return result;
 }
 
