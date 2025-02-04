@@ -1,8 +1,6 @@
 // UPpr_24-25_fn0MI0600445_KP_04.cpp : This file contains the 'main' function. Program execution begins and ends there.
 //
 
-
-// Refactored C++ Polynomial Calculator
 #include <iostream>
 #include <vector>
 
@@ -34,7 +32,7 @@ static Rational simplify(const Rational& r)
 
     if (denumerator == 0)
     {
-        std::cerr << "Denominator cannot be zero.\n";
+        std::cout << "Denominator can't be zero.\n";
         exit(1);
     }
 
@@ -51,7 +49,7 @@ static Rational simplify(const Rational& r)
     return { numerator, denumerator };
 }
 
-static int string_to_int(const std::string& str)
+int string_to_int(const std::string& str)
 {
     int result = 0;
     bool isNegative = false;
@@ -79,7 +77,7 @@ static int string_to_int(const std::string& str)
     }
 }
 
-static Rational add_rational(const Rational& a, const Rational& b)
+Rational add_rational(const Rational& a, const Rational& b)
 {
     int n1 = a.first, d1 = a.second;
     int n2 = b.first, d2 = b.second;
@@ -88,7 +86,7 @@ static Rational add_rational(const Rational& a, const Rational& b)
     return simplify({ numerator, denominator });
 }
 
-static Rational subtract_rational(const Rational& a, const Rational& b)
+Rational subtract_rational(const Rational& a, const Rational& b)
 {
     int n1 = a.first, d1 = a.second;
     int n2 = b.first, d2 = b.second;
@@ -97,7 +95,7 @@ static Rational subtract_rational(const Rational& a, const Rational& b)
     return simplify({ numerator, denominator });
 }
 
-static Polynomial add_polynomials(const Polynomial& p1, const Polynomial& p2)
+Polynomial add_polynomials(const Polynomial& p1, const Polynomial& p2)
 {
     size_t max_degree = std::max(p1.size(), p2.size());
     Polynomial result(max_degree, { 0, 1 });
@@ -111,7 +109,7 @@ static Polynomial add_polynomials(const Polynomial& p1, const Polynomial& p2)
     return result;
 }
 
-static Polynomial subtract_polynomials(const Polynomial& p1, const Polynomial& p2)
+Polynomial subtract_polynomials(const Polynomial& p1, const Polynomial& p2)
 {
     size_t max_degree = std::max(p1.size(), p2.size());
     Polynomial result(max_degree, { 0, 1 });
@@ -125,7 +123,7 @@ static Polynomial subtract_polynomials(const Polynomial& p1, const Polynomial& p
     return result;
 }
 
-static Polynomial multiply_polynomials(const Polynomial& p1, const Polynomial& p2)
+Polynomial multiply_polynomials(const Polynomial& p1, const Polynomial& p2)
 {
     size_t degree1 = p1.size();
     size_t degree2 = p2.size();
@@ -143,11 +141,11 @@ static Polynomial multiply_polynomials(const Polynomial& p1, const Polynomial& p
     return result;
 }
 
-static std::pair<Polynomial, Polynomial> divide_polynomials(const Polynomial& dividend, const Polynomial& divisor)
+std::pair<Polynomial, Polynomial> divide_polynomials(const Polynomial& dividend, const Polynomial& divisor)
 {
     if (divisor.empty() || divisor.back().first == 0)
     {
-        std::cerr << "Division by zero - not allowed.";
+        std::cout << "Division by zero - not allowed.";
         exit(1);
     }
 
@@ -178,7 +176,7 @@ static std::pair<Polynomial, Polynomial> divide_polynomials(const Polynomial& di
     return { quotient, remainder };
 }
 
-static void print_polynomial(const Polynomial& p)
+void print_polynomial(const Polynomial& p)
 {
     bool first = true;
     for (size_t i = p.size(); i-- > 0;)
@@ -207,7 +205,7 @@ static void print_polynomial(const Polynomial& p)
     std::cout << std::endl;
 }
 
-static Polynomial read_polynomial()
+Polynomial read_polynomial()
 {
     int degree;
     std::cout << "\nEnter the degree of the polynomial: ";
@@ -536,7 +534,6 @@ void factor_polynomial()
             }
         }
     }
-
     std::cout << "\nEnter a new option: ";
 }
 
