@@ -77,10 +77,12 @@ int string_to_int(const std::string& str)
     }
 }
 
-Rational add_rational(const Rational& a, const Rational& b)
+Rational add_rational(const Rational& a, const Rational& b) 
 {
-    int n1 = a.first, d1 = a.second;
-    int n2 = b.first, d2 = b.second;
+    int n1 = a.first;
+    int d1 = a.second;
+    int n2 = b.first;
+    int d2 = b.second;
     int numerator = n1 * d2 + n2 * d1;
     int denominator = d1 * d2;
     return simplify({ numerator, denominator });
@@ -88,11 +90,30 @@ Rational add_rational(const Rational& a, const Rational& b)
 
 Rational subtract_rational(const Rational& a, const Rational& b)
 {
-    int n1 = a.first, d1 = a.second;
-    int n2 = b.first, d2 = b.second;
+    int n1 = a.first;
+    int d1 = a.second;
+    int n2 = b.first;
+    int d2 = b.second;
     int numerator = n1 * d2 - n2 * d1;
     int denominator = d1 * d2;
     return simplify({ numerator, denominator });
+}
+
+Rational evaluate_polynomial(const Polynomial& p, const Rational& x)
+{
+    Rational result = { 0, 1 };
+    Rational power = { 1, 1 };
+
+    for (size_t i = 0; i < p.size(); i++)
+    {
+        Rational term = { p[i].first * power.first, p[i].second * power.second };
+        result = add_rational(result, simplify(term));
+
+        power.first *= x.first;
+        power.second *= x.second;
+        power = simplify(power);
+    }
+    return simplify(result);
 }
 
 size_t max_val(size_t a, size_t b) 
@@ -105,7 +126,7 @@ size_t max_val(size_t a, size_t b)
         return x;
 }
 
-Polynomial add_polynomials(const Polynomial& p1, const Polynomial& p2)
+Polynomial addPolynomials(const Polynomial& p1, const Polynomial& p2)
 {
     size_t max_degree = max_val(p1.size(), p2.size());
     Polynomial result(max_degree, { 0, 1 });
@@ -118,7 +139,7 @@ Polynomial add_polynomials(const Polynomial& p1, const Polynomial& p2)
     return result;
 }
 
-Polynomial subtract_polynomials(const Polynomial& p1, const Polynomial& p2)
+Polynomial subtractPolynomials(const Polynomial& p1, const Polynomial& p2)
 {
     size_t max_degree = max_val(p1.size(), p2.size());
     Polynomial result(max_degree, { 0, 1 });
@@ -131,7 +152,7 @@ Polynomial subtract_polynomials(const Polynomial& p1, const Polynomial& p2)
     return result;
 }
 
-Polynomial multiply_polynomials(const Polynomial& p1, const Polynomial& p2)
+Polynomial multiplyPolynomials(const Polynomial& p1, const Polynomial& p2)
 {
     size_t degree1 = p1.size();
     size_t degree2 = p2.size();
@@ -148,7 +169,7 @@ Polynomial multiply_polynomials(const Polynomial& p1, const Polynomial& p2)
     return result;
 }
 
-std::pair<Polynomial, Polynomial> divide_polynomials(const Polynomial& dividend, const Polynomial& divisor)
+std::pair<Polynomial, Polynomial> dividePolynomials(const Polynomial& dividend, const Polynomial& divisor)
 {
     if (divisor.empty() || divisor.back().first == 0)
     {
@@ -169,10 +190,10 @@ std::pair<Polynomial, Polynomial> divide_polynomials(const Polynomial& dividend,
 
         Polynomial term(degree_difference + 1, { 0, 1 });
         term.back() = leading_term;
-        quotient = add_polynomials(quotient, term);
+        quotient = addPolynomials(quotient, term);
 
-        Polynomial scaled_divisor = multiply_polynomials(term, divisor);
-        remainder = subtract_polynomials(remainder, scaled_divisor);
+        Polynomial scaled_divisor = multiplyPolynomials(term, divisor);
+        remainder = subtractPolynomials(remainder, scaled_divisor);
 
         while (!remainder.empty() && remainder.back().first == 0)
         {
@@ -286,7 +307,7 @@ void add_polynomials()
     std::cout << "\nPolynomial G(x)\n";
     Polynomial p2 = read_polynomial();
 
-    Polynomial sum = add_polynomials(p1, p2);
+    Polynomial sum = addPolynomials(p1, p2);
     std::cout << "P(x) + G(x)= ";
     print_polynomial(sum);
 
@@ -301,7 +322,7 @@ void subtract_polynomials()
     std::cout << "\nPolynomial G(x)\n";
     Polynomial p2 = read_polynomial();
 
-    Polynomial difference = subtract_polynomials(p1, p2);
+    Polynomial difference = subtractPolynomials(p1, p2);
     std::cout << "P(x) - G(x)= ";
     print_polynomial(difference);
 
@@ -316,7 +337,7 @@ void multiply_polynomials()
     std::cout << "\nPolynomial G(x)";
     Polynomial p2 = read_polynomial();
 
-    Polynomial product = multiply_polynomials(p1, p2);
+    Polynomial product = multiplyPolynomials(p1, p2);
     std::cout << "P(x) * G(x)= ";
     print_polynomial(product);
 
@@ -331,7 +352,7 @@ void divide_polynomials()
     std::cout << "\nPolynomial G(x)";
     Polynomial p2 = read_polynomial();
 
-    std::pair<Polynomial, Polynomial> divisionResult = divide_polynomials(p1, p2);
+    std::pair<Polynomial, Polynomial> divisionResult = dividePolynomials(p1, p2);
     Polynomial quotient = divisionResult.first;
     Polynomial remainder = divisionResult.second;
 
@@ -401,7 +422,7 @@ void find_gcd()
 
     while (!p2.empty() && p2.back().first != 0)
     {
-        Polynomial remainder = subtract_polynomials(p1, multiply_polynomials(p2, divide_polynomials(p1, p2).first));
+        Polynomial remainder = subtractPolynomials(p1, multiplyPolynomials(p2, dividePolynomials(p1, p2).first));
         p1 = p2;
         p2 = remainder;
     }
@@ -514,6 +535,7 @@ void factor_polynomial()
     }
 
     std::cout << "Possible rational roots:\n";
+
     for (int numerator : possible_numerators)
     {
         for (int denumerator : possible_denominators)
