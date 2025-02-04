@@ -1,5 +1,22 @@
 // UPpr_24-25_fn0MI0600445_KP_04.cpp : This file contains the 'main' function. Program execution begins and ends there.
 //
+/**
+*
+*Solution to course project #04
+*Introduction to programming course
+*Faculty of Mathematics and Informatics of Sofia University
+*Winter semester 2024/2025
+*
+*@author Ivayla Ivanova
+*@idnumber 0MI0600445
+*@compiler VC
+*
+*This is a polynomial calculator with rational coefficients that
+allows you to perform mathematical operations on polynomials.
+The main purpose of the program is to provide a tool for working
+with polynomials that can be used for learning purposes in algebra.
+*
+*/
 
 #include <iostream>
 #include <vector>
